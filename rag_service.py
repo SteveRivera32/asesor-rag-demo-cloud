@@ -15,6 +15,7 @@ except ImportError:
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 CHROMA_DIR = os.path.join(BASE_DIR, "chroma_asesor")
 COLLECTION_NAME = "asesor_docs"
+BASE_KNOWLEDGE_DIR = os.path.join(BASE_DIR, "base_conocimiento")
 
 
 def _embedding_fn():
@@ -152,3 +153,45 @@ def query_context(question, n_results=8, max_context_chars=7000):
         total += len(t)
 
     return ("\n\n---\n\n".join(selected) if selected else ""), refs
+
+
+def list_pdfs_in_base_conocimiento():
+    """
+    Lista los nombres de los PDFs detectados en base_conocimiento/.
+    Ojo: detectados != indexados (se necesita build_index para que estén en el RAG).
+    """
+    pdf_paths = _pdfs_in_folder(BASE_KNOWLEDGE_DIR)
+    return [os.path.basename(p) for p in pdf_paths]
+
+
+def list_indexed_sources():
+    """
+    Lista los nombres de fuentes (PDFs) que existen en el índice Chroma.
+    Esto representa el "acceso real" que tiene el RAG en este momento.
+    """
+    if chromadb is None or not has_index():
+        return []
+
+    try:
+        client = chromadb.PersistentClient(path=CHROMA_DIR)
+        # Sin embedding_function: solo queremos leer metadatos.
+        collection = client.get_collection(name=COLLECTION_NAME)
+        res = collection.get(include=["metadatas"])
+        metadatas = res.get("metadatas") or []
+    except Exception:
+        return []
+
+    def _accumulate(maybe_meta):
+        if isinstance(maybe_meta, dict):
+            src = maybe_meta.get("source")
+            if src:
+                sources.add(src)
+            return
+        if isinstance(maybe_meta, list):
+            for item in maybe_meta:
+                _accumulate(item)
+
+    sources = set()
+    _accumulate(metadatas)
+
+    return sorted(sources)
