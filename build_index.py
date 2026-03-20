@@ -2,7 +2,10 @@
 # -*- coding: utf-8 -*-
 
 import os
+from dotenv import load_dotenv
 from rag_service import build_index_from_folder
+
+load_dotenv()
 
 
 def main():

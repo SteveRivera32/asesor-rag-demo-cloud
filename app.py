@@ -6,6 +6,7 @@ import os
 from datetime import datetime
 
 import gradio as gr
+from dotenv import load_dotenv
 
 from rag_service import (
     COLLECTION_NAME,
@@ -15,6 +16,8 @@ from rag_service import (
     query_context,
 )
 from service_openai import ask_asesor, safe_text
+
+load_dotenv()
 
 PRESET_QUESTIONS = [
     "¿De qué trata el proyecto?",
@@ -189,7 +192,6 @@ with gr.Blocks(title="Demo Asesor RAG") as demo:
                 )
                 pregunta = gr.Textbox(label="Pregunta", lines=3)
                 with gr.Row():
-                    btn_use = gr.Button("Usar pregunta sugerida")
                     btn_consultar = gr.Button("Consultar asesor", variant="primary")
                     btn_limpiar = gr.Button("Limpiar")
                 respuesta = gr.Textbox(label="Respuesta del asesor", lines=14)
@@ -198,7 +200,6 @@ with gr.Blocks(title="Demo Asesor RAG") as demo:
                 panel = gr.HTML(value=render_right_panel([]), label="Flujo del proceso")
 
     preset.change(fn=apply_preset, inputs=[preset, pregunta], outputs=[pregunta])
-    btn_use.click(fn=apply_preset, inputs=[preset, pregunta], outputs=[pregunta])
     btn_consultar.click(fn=consult, inputs=[pregunta], outputs=[respuesta, panel])
     pregunta.submit(fn=consult, inputs=[pregunta], outputs=[respuesta, panel])
     btn_limpiar.click(fn=clear_all, inputs=[], outputs=[pregunta, panel, respuesta, preset])
