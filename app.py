@@ -164,12 +164,29 @@ def clear_all():
 def preload_index():
     if os.getenv("AUTO_BUILD_INDEX", "0") != "1":
         return
+    # Evita reindexar en cada arranque si el índice ya existe en disco.
+    if has_index():
+        return
+    if not os.getenv("OPENAI_API_KEY"):
+        print(
+            "[preload_index] OPENAI_API_KEY no está seteada; no se puede construir el índice.",
+            flush=True,
+        )
+        return
     folder = os.path.join(os.path.dirname(__file__), "base_conocimiento")
     if os.path.isdir(folder):
         try:
-            build_index_from_folder(folder)
-        except Exception:
-            pass
+            count = build_index_from_folder(folder)
+            print(f"[preload_index] Índice construido. Chunks indexados: {count}", flush=True)
+        except Exception as e:
+            # En Render el fallo puede pasar desapercibido si no logueamos.
+            # De esta forma queda claro en los logs qué pasó.
+            print(f"[preload_index] Error construyendo índice: {e}", flush=True)
+    else:
+        print(
+            f"[preload_index] No existe carpeta base_conocimiento en: {folder}",
+            flush=True,
+        )
 
 
 CUSTOM_CSS = """

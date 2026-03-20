@@ -68,8 +68,15 @@ def _pdfs_in_folder(folder):
 def has_index():
     if chromadb is None or not os.path.isdir(CHROMA_DIR):
         return False
+    # Si el directorio existe pero no hay persistencia (por ejemplo, en entornos nuevos),
+    # asumimos que no hay índice listo.
+    sqlite_path = os.path.join(CHROMA_DIR, "chroma.sqlite3")
+    if not os.path.exists(sqlite_path):
+        return False
     try:
         client = chromadb.PersistentClient(path=CHROMA_DIR)
+        # Importante: no instanciamos embedding_function aquí, porque OpenAIEmbeddingFunction
+        # exige OPENAI_API_KEY aun cuando solo queremos validar persistencia.
         client.get_collection(name=COLLECTION_NAME)
         return True
     except Exception:
